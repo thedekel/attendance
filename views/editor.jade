@@ -1,7 +1,10 @@
-#editor
+#editorregion
   .tabs
     ul
-      li.selected Edit
-      li Preview
-  .editor
-    textarea(name='description', rows=20, cols=80)#description= org.description
+      li.selected#editbtn Edit
+      li#previewbtn Preview
+  .editor#editor
+    textarea(name='description', rows=20, cols=80)#description= description
+  p.help-block (text is formatted using <a target='_blank' href='http://daringfireball.net/projects/markdown/'>Markdown</a>)
+  script(language='javascript', src='/javascripts/marked.js')
+  script(language='javascript', src='/javascripts/editor.js')

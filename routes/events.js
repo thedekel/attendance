@@ -114,6 +114,7 @@ exports.create = function(req, res, next) {
     res.render('create-event', {
       req:req,
       user:req.user,
+      description: '',
       event: {},
       orgs: orgs,
       update: false,
@@ -617,7 +618,7 @@ exports.unguest = function(req,res,next){
         models.Part.remove({'event':event._id, 'account':req.body.guest},
           function(err){
             //callback for remove operation, once we're here, we're done
-            cb();
+            cb(null, event, org);
           }
         );
       });
@@ -762,6 +763,7 @@ exports.edit = function(req, res, next) {
       req:req,
       user:req.user,
       event: event,
+      description: event.description,
       update: true,
     });
   });

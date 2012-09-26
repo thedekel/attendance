@@ -194,6 +194,7 @@ exports.create = function(req, res, next) {
     req:req,
     user:req.user,
     update: false,
+    description: '',
     org: {},
   });
 };
@@ -215,6 +216,7 @@ exports.edit = function(req, res, next) {
     res.render('create-org', {
       req:req,
       user:req.user,
+      description: org.description,
       update: true,
       org: org,
     });
