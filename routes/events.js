@@ -498,6 +498,7 @@ exports.guest_attend = function(req, res, next) {
                   });
                   //save it
                   my_doc.save(function(err, doc){
+                    console.log('attending as guest');
 
                     email.send({
                       to: doc.email,
@@ -515,6 +516,7 @@ exports.guest_attend = function(req, res, next) {
                       if (!success){
                         console.error(error);
                       }
+                      console.log('message sent... supposedly');
                       var reg = models.Regiquest({
                         gt_id: doc.gt_id
                       });
