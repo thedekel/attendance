@@ -9,6 +9,7 @@ block content
           input(type='submit', value='Delete').btn.error
         a(href=req.url + '/edit').btn.pull-right Edit
         a(href='/create-event/?org=' + escape(org.name)).pull-right.btn Create an event
+        a(href='/create-repeating-event/?org=' + escape(org.name)).pull-right.btn Create a repeating event
       h1= org.name
 
   p!= md.parse(escape(org.description))

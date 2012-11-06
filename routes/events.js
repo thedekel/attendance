@@ -123,6 +123,27 @@ exports.create = function(req, res, next) {
 };
 
 /**
+ * show the create-repeating-event page for GET /create-repeating-event/
+ */
+exports.createR = function(req, res, next) {
+  //produce a list of all orgs
+  models.Org.find({}, function(err, orgs) {
+    if(err) {
+      return next(err);
+    }
+    //render the page with the list of orgs embedded
+    res.render('create-repeating-event', {
+      req:req,
+      user:req.user,
+      description: '',
+      event: {},
+      orgs: orgs,
+      update: false,
+    });
+  });
+};
+
+/**
  * an event details page from GET /events/:id
  */
 exports.details = function(req, res, next) {
