@@ -29,12 +29,15 @@ block content
         ul.mod_list
           each user in users[org.slug]
             li 
-              p(style='display:inline')= user.name.first + ' ' + user.name.last
-              form(action='/orgs/' + org.slug + '/admin', method='POST', style='display:inline;margin-left:5px;')
-                input(type='hidden', name='_csrf', value=req.session._csrf)
-                input(type='hidden', name='_method', value='DELETE')
-                input(type='hidden', name='user', value=user._id)
-                input(type='submit', value='Delete').btn.error
+              if (user)
+                p(style='display:inline')= user.name.first + ' ' + user.name.last
+                  form(action='/orgs/' + org.slug + '/admin', method='POST', style='display:inline;margin-left:5px;')
+                  input(type='hidden', name='_csrf', value=req.session._csrf)
+                  input(type='hidden', name='_method', value='DELETE')
+                  input(type='hidden', name='user', value=user._id)
+                  input(type='submit', value='Delete').btn.error
+              else
+                p error with user object
           li
              form(action='/orgs/' + org.slug + '/admin', method='POST', style='display:inline;margin-left:5px;')
                input(type='hidden', name='_csrf', value=req.session._csrf)
