@@ -509,7 +509,8 @@ exports.guest_attend = function(req, res, next) {
                         "following url in your favorite browser (it has to\n"+
                         "be your favorite :)) and complete the registration\n"+
                         "process!\n"+
-                        "\n http://ccorgs.com/register?guest=" + doc._id
+                        "\n <http://ccorgs.com/register?guest=" + doc._id + ">",
+                      from: "register"
                     }, function(error, success) {
                       if (!success){
                         console.error(error);
@@ -542,7 +543,9 @@ exports.guest_attend = function(req, res, next) {
                         " To do so, please open the following url in your"+
                         " favorite browser (it has to be your favorite :))\n"+
                         " and complete the registration process!\n"+
-                        "\n http://ccorgs.com/register?guest=" + guest_doc._id
+                        "\n <http://ccorgs.com/register?guest=" + guest_doc._id +
+                        ">",
+                      from: "register"
                       }, function(error, success) {
                         if (!success){
                           console.error(error);

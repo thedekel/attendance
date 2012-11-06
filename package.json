@@ -15,7 +15,7 @@
     "express-messages-bootstrap": "0.1.x",
     "connect-mongodb": "1.1.x",
     "coffee-script": "1.3.x",
-    "mailer": "0.6.x"
+    "mandrill-api": "1.x"
   },
   "engines": {
     "npm": "1.1.x",

@@ -13,6 +13,7 @@ module.exports = {
         host: 'smtp.sendgrid.net',
         port: '587',
     },
+    mandrill_api_key: process.env.MANDRILL_APIKEY
 };
 var urire = /mongodb:\/\/(\w+?):(\w+?)@([\w\.]+?):(\d+?)\/(\w+)/,
     res;
