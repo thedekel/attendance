@@ -5,6 +5,7 @@ var async = require('async'),
     ONE_HOUR = 1000 * 60 * 60,
     ONE_WEEK = ONE_HOUR * 24 * 7;
 
+
 /**
  * attempts to post new events from POST /events
  */
@@ -321,6 +322,195 @@ exports.list = function(req, res, next) {
     }
   );
 };
+
+exports.post_raffle = function(req, res, next){
+  async.waterfall([
+    function(cb) {
+      //retrieve the org which is being passed
+      models.Org.findOne({_id: req.body.org}, cb);
+    },
+    function(org, cb) {
+      // to make an event, must be either an admin of the site
+      if (req.user.is_admin) {
+        return cb();
+      }
+      // ...or an admin of the Org
+      if (org.admins.indexOf(req.user.id) >= 0) {
+        return cb();
+      }
+      return res.send(403);
+    },
+    function(cb) {
+      //find the event
+      models.Event.findOne({_id: req.params.id}, cb);
+    },
+    function(event, cb) {
+      var win_obj;
+      if (req.body.winners){
+        models.Raffle.findOneAndUpdate({event:event._id}, {winners:req.body.winners}).exec();
+      }
+      //all done!
+      cb();
+    }], 
+    function(err) {
+      if (err) {
+        return next(err);
+      }
+      //redirect back to event page
+      res.redirect(req.url);
+    }
+  );
+};
+exports.raffle = function(req, res, next){
+  async.waterfall([
+    function(cb) {
+      //find the event by the id provided in the url
+      models.Event.findOne({_id: req.params.id}, function(err, event) {
+        //make sure that an event was found, 404 if not found
+        if (event == null) {
+          return res.send(404);
+        } 
+        cb(err, event);
+      });
+    },
+    function(event, cb) {
+      //find the org listed in the event object
+      models.Org.findOne({_id: event.org}, function(err, org) {
+        //404 if couldn't be found
+        if (org == null) {
+          res.send(404);
+        } else {
+          cb(err, event, org);
+        }
+      });
+    },
+    function(event, org, cb) {
+      // to make an event, must be either an admin of the site
+      if (!req.user.is_admin) {
+        return res.send(403);
+      }
+      // ...or an admin of the Org
+      if (org.admins.indexOf(req.user.id) >= 0) {
+        return res.send(403);
+      }
+      //search for a place, pretty sure this is disabled
+      models.Place.findOne({_id: event.place}, function(err, place) {
+        cb(err, event, org, place);
+      });
+    },
+    function(event, org, place, cb) {
+      /*this is a map which looks for user based on the
+       * attendees list which exist within the "event" object
+       * We now use a combination of a participation and user/guest
+       * models to accomplish this. However, this is kept for legacy
+       * support purposes - NOTE: if the database is ever restarted,
+       * this functionality should be safe to remove! */
+      async.map(event.attendees, function(user_id, cb) {
+        models.User.findOne({_id: user_id}, cb);
+      }, 
+      function(err, attendees) {
+        cb(err, event, org, place, attendees);
+      });
+    },
+    function(event, org, place, legacy_attendees, cb){
+      //find participation objects tied to the event
+      models.Part.find({'event':event._id}, 'account',
+        function(err, docs){
+          //for each participation object found, look for a user object
+            async.map(docs, function(user_id, cb) {
+              models.User.findOne({_id: user_id.account}, function(err,att){
+                cb(null, att);
+              });
+            }, 
+            function(err, new_attendees) {
+              //filter out all the guest objects
+              async.filter(new_attendees, function(att, fcb){
+                if (att){
+                  return fcb(true);
+                }
+                return fcb(false);
+              },
+              function(user_att){
+                cb(err, event, org, place, legacy_attendees, user_att);
+              });
+            }
+          );
+        }
+      );
+    },
+    function(event,org,place,legacy_attendees,attendees, cb){
+      //do the same as the previous function, but for guests instead of users
+      models.Part.find({'event':event._id}, 'account',
+        function(err, docs){
+          async.map(docs, function(user_id, cb) {
+            models.Guest.findOne({_id: user_id.account}, function(err,att){
+              cb(null, att);
+            });
+          }, 
+          function(err, new_attendees) {
+            async.filter(new_attendees, function(att, fcb){
+              if (att){
+                return fcb(true);
+              }
+              return fcb(false);
+            },
+            function(guest_att){
+              async.map(docs, function(doc,cb){
+                cb(null, doc.account);
+              }, 
+              function(err, final_att){
+                cb(err, event, org, place, legacy_attendees, attendees, 
+                   guest_att, final_att);
+                }
+              );
+            });
+          });
+        }
+      );
+    },
+    function(event, org, place, legacy_attendees, attendees, guests, att_ids, cb){
+      models.Raffle.findOne({'event':event._id}, function(err, raff){
+        if (err){
+          return next(err);
+        }
+        if (!raff){
+          nraff = new models.Raffle({event: event._id, winners:"[]"});
+          nraff.save(function(err, newraff){
+            if (err){
+              return next(err);
+            }
+            cb(err, event, org, place, legacy_attendees, attendees, guests, att_ids, newraff);
+          });
+
+        } else {
+          cb(err, event, org, place, legacy_attendees, attendees, guests, att_ids, raff);
+        }
+      });
+    }
+  ], 
+  function(err, event, org, place, legacy_attendees, attendees, guests, att_ids, raffle) {
+    if (err) {
+      return next(err);
+    }
+    if (!event) {
+      return res.send(404);
+    }
+    //render the page
+    res.render('raffle', {
+      req:req,
+      user:req.user,
+      event: event,
+      org: org,
+      place: place,
+      att_users: attendees,
+      att_guests: guests,
+      atts: att_ids,
+      raffle: raffle,
+      legacy:legacy_attendees,
+    });
+  });
+};
+
 
 /**
  * produce the kiosk mode page for an event

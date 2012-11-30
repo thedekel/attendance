@@ -1,0 +1,119 @@
+extends layout
+block content
+  .content
+    .page-header
+      h1= event.title + ' - Raffle Mode'
+        small
+          a(href='/orgs/' + org.slug)= org.name
+
+    if place != null
+      p= place.name
+
+    != md.parse(escape(event.description))
+    
+    h3 Raffle Mode
+    input(id='csrf_token', type='hidden', name='_csrf', value=req.session._csrf)
+  #controls.span12.page-header
+    button(id="new_win") pick new winner
+    button(id="clear") clear raffle
+    button(id="save") save raffle
+   #users.span3
+     if (att_users.length != 0 || legacy.length != 0)
+        h3 Users (#{att_users.length + legacy.length})
+        table.span5
+          tbody
+            each attendee in att_users
+                tr.att_tr
+                  td
+                    input(type="checkbox", id=attendee.gt_id, checked="true", style="display:inline")
+                  td= attendee.name.first + ' ' + attendee.name.last
+                  td
+            each attendee in legacy
+              tr.att_tr
+                td
+                  input(type="checkbox", id=attendee.gt_id, checked="true", style="display:inline")
+                td= attendee.name.first + ' ' + attendee.name.last
+                td 
+
+      if (att_guests.length != 0)
+        h3(style='clear:both') Guests (#{att_guests.length})
+        table.span5
+          tbody
+            each attendee in att_guests
+              tr.att_tr
+                td
+                  input(type="checkbox", id=attendee.gt_id, style="display:inline")
+                td= jumble(attendee.email)
+    #raffle.span5.offset2
+      h3 Winners
+      label
+        input(type="checkbox", id="unique_win", checked="true", style="display:inline")
+        span Prevent repeating winners
+      #winners
+        each winner in JSON.parse(raffle.winners)
+          .picked
+            p(class=winner.id)= winner.name
+   
+
+  script(type='text/javascript')
+      function addwinner(winner_id){
+        console.log("winner: " + winner_id);
+        var winname = document.getElementById(winner_id).parentNode.parentNode.children[1].innerText;
+        var windiv = document.createElement("div");
+        windiv.setAttribute("class", "picked");
+        windiv.innerHTML = "<p class="+winner_id+">" + winname + "<p>"
+        document.getElementById("winners").insertBefore(windiv, document.getElementById("winners").children[0]);
+        console.log(winname);
+      }
+      function save_raffle(event){
+        var picked = document.getElementsByClassName('picked'), picked_list = [];
+        for (i = 0; i < picked.length; i+=1){
+          picked_list.push({id:picked[i].children[0].className, name:picked[i].children[0].innerHTML});
+        }
+        console.log(picked_list);
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function(){
+          if (xhr.readystate === 4 && xhr.status === 200){
+            console.log("ok");
+          }
+        }
+        xhr.open("POST", location.href, true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); 
+        xhr.send("winners="+JSON.stringify(picked_list) + "&_csrf=" + 
+          document.getElementById("csrf_token").value);
+      }
+      function pickwinner(event){
+        var picks = document.getElementsByClassName('att_tr'),
+            valid_picks = [], i, picked = document.getElementsByClassName('picked'),
+            picked_list = [], unique_check = document.getElementById('unique_win');
+        for (i = 0; i < picked.length; i+=1){
+          picked_list.push(picked[i].children[0].className);
+        }
+        for (i = 0; i < picks.length; i+=1){
+          if (unique_check.checked){
+            if (picked_list.indexOf(picks[i].children[0].children[0].id)!=-1){
+              continue;
+            }
+          }
+          if (!picks[i].children[0].children[0].checked){
+            continue;
+          }
+          valid_picks.push(picks[i].children[0].children[0].id);
+        }
+        console.log(valid_picks);
+        if (valid_picks.length === 0){
+          alert('all selected guests have won already!');
+          return;
+        }
+        var rand = Math.floor(Math.random()*valid_picks.length);
+        console.log('pick: ' + rand);
+        addwinner(valid_picks[rand]);
+      }
+      var win_btn = document.getElementById('new_win'),
+          save_btn = document.getElementById('save'),
+          clear_btn = document.getElementById('clear');
+      win_btn.onclick = pickwinner;
+      clear_btn.onclick = function(){
+        document.getElementById("winners").innerHTML="";
+      };
+      save_btn.onclick = save_raffle;
