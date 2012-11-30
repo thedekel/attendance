@@ -386,11 +386,7 @@ exports.raffle = function(req, res, next){
     },
     function(event, org, cb) {
       // to make an event, must be either an admin of the site
-      if (!req.user.is_admin) {
-        return res.send(403);
-      }
-      // ...or an admin of the Org
-      if (org.admins.indexOf(req.user.id) >= 0) {
+      if (!req.user.is_admin && org.admins.indexOf(req.user.id) === -1) {
         return res.send(403);
       }
       //search for a place, pretty sure this is disabled
